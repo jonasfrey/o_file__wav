@@ -1,7 +1,8 @@
-<!-- {"s_msg":"this file was automatically generated","s_by":"f_generate_markdown.module.js","s_ts_created":"Thu Aug 31 2023 01:10:52 GMT+0200 (Central European Summer Time)","n_ts_created":1693437052102} -->
+<!-- {"s_msg":"this file was automatically generated","s_by":"f_generate_markdown.module.js","s_ts_created":"Thu Aug 31 2023 22:48:12 GMT+0200 (Central European Summer Time)","n_ts_created":1693514892666} -->
 # import functions
 ```javascript
 import {
+    f_o_canvas_from_o_file__wav,
     f_o_file__wav__from_a_n_u8,
     f_o_file__wav__from_a_n_u8__after_header,
     f_o_file__wav__from_a_n_u8__fetch_from_s_url
@@ -86,6 +87,21 @@ o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/Cantin
 document.body.appendChild(
     f_o_el_audio__from_o_file__wav(o_file__wav)
 )
+
+```
+# `f_o_canvas_from_o_file__wav`: a small function to convert a wav file into an image, just for fun
+```javascript
+
+let o_canvas = f_o_canvas_from_o_file__wav(
+    o_file__wav,
+    1, 
+    2,
+);
+document.body.appendChild(o_canvas);
+
+```
+![CantinaBand60.wav.png]('./localhost/files/CantinaBand60.wav.png')
+```javascript
 
 
 ```

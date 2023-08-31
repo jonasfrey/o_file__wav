@@ -3,9 +3,11 @@
 //./readme.md:start
 //md: # import functions 
 import {
+    f_o_canvas_from_o_file__wav,
     f_o_file__wav__from_a_n_u8,
     f_o_file__wav__from_a_n_u8__after_header,
-    f_o_file__wav__from_a_n_u8__fetch_from_s_url
+    f_o_file__wav__from_a_n_u8__fetch_from_s_url,
+    f_o_file__wav__from_o_s_url_image
 } from './functions.module.js'
 
 
@@ -70,11 +72,40 @@ document.body.appendChild(
 
 //md: # `f_o_file__wav__from_a_n_u8__fetch_from_s_url`: fetch a .wav file from a url and create a o_file__wav
 // if we have a webserver that hosts .wav files we can directly fetch those into a o_wav__file 
-o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/CantinaBand60.wav');
+o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/120_Em_Cello_51_189_SP.wav');
+// o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/CantinaBand60.wav');
 
 document.body.appendChild(
     f_o_el_audio__from_o_file__wav(o_file__wav)
 )
 
+//md: # `f_o_canvas_from_o_file__wav`: a small function to convert a wav file into an image, just for fun
+
+let o_canvas = f_o_canvas_from_o_file__wav(
+    o_file__wav,
+    1, 
+    3.3
+);
+document.body.appendChild(o_canvas);
+
+//md: ![CantinaBand60.wav.png]('./localhost/files/CantinaBand60.wav.png')
+
+//md: # `asdf`: convert a image to a wav file
+
+let s_path_file_image_to_convert = './files/circles.png'
+o_file__wav = await f_o_file__wav__from_o_s_url_image(s_path_file_image_to_convert); 
+var o_el_image = new Image();
+o_el_image.onload = function(){
+//   ctx.drawImage(o_el_image,0,0); // Or at whatever offset you like
+    console.log(this)
+};
+o_el_image.src =  s_path_file_image_to_convert;
+
+o_file__wav.o_file.n_samples_per_second_per_channel = 88000;
+document.body.appendChild(o_el_image)
+document.body.appendChild(
+    f_o_el_audio__from_o_file__wav(o_file__wav)
+)
+console.log(o_file__wav.o_file)
 
 //./readme.md:end

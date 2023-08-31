@@ -8,7 +8,15 @@ if('Deno' in window){
     o_mod_canvas = await import("https://deno.land/x/canvas/mod.ts")
     f_o_canvas = o_mod_canvas.createCanvas;
 }else{
-    f_o_canvas = document.createElement("canvas");
+    f_o_canvas = function(
+        n_scl_x_px, 
+        n_scl_y_px
+    ){
+        let o_el_canvas = document.createElement("canvas");
+        o_el_canvas.width = n_scl_x_px
+        o_el_canvas.height = n_scl_y_px
+        return o_el_canvas
+    }
 }
 let f_o_file__wav__decode_a_n_u8__wav = [
     new O_byte_offset_property(
@@ -262,7 +270,9 @@ let f_s_data_url_image__from_o_file__wav = async function(
 
 
     const o_canvas = f_o_canvas(n_scl_x_px, n_scl_y_px);
-    const o_ctx = o_canvas.getContext("2d");
+    // const o_ctx = o_canvas.getContext("2d");
+    const o_ctx = o_canvas.getContext('2d', { alpha: false });
+
 
     o_ctx.fillStyle = "red";
     console.log(o_file__wav.a_a_n_sample__channels[0].length)
@@ -450,22 +460,86 @@ let f_o_file__wav__from_a_n_u8__fetch_from_s_url = async function(s_url){
         }
     )
 }
+function drawTextOnCanvas(ctx, lines, factor = 1) {
+    if (!lines || lines.length === 0) return;
 
-let f_o_image_from_o_file__wav = async function(
+    const textPadding = 10; // Inner padding: space between text and its background
+    const bgPadding = 20; // Outer padding: space between the text background and canvas edges
+    const maxWidth = ctx.canvas.width * factor - 4 * bgPadding; // Adjust for padding on all sides
+    let fontSize = 10; // Starting font size, you can adjust this if needed
+    const longestLine = lines.reduce((a, b) => a.length > b.length ? a : b);
+
+    // Increase font size until the longest line exceeds maxWidth
+    do {
+        fontSize++;
+        ctx.font = "1000 " + fontSize + "px sans-serif"; // using maximum font-weight
+    } while (ctx.measureText(longestLine).width < maxWidth && fontSize < ctx.canvas.height);
+
+    // Dimensions for the background rectangle
+    const rectWidth = ctx.measureText(longestLine).width + 2 * textPadding + 2 * bgPadding;
+    const rectHeight = lines.length * fontSize * 1.2 + 2 * bgPadding;
+
+    // Draw semi-transparent black rectangle
+    ctx.fillStyle = "rgba(0, 0, 0, 0.2)"; // Black with 50% opacity
+    ctx.fillRect(bgPadding, bgPadding, rectWidth, rectHeight);
+
+    // Configure text and outline
+    ctx.fillStyle = 'white';
+    ctx.strokeStyle = 'black';
+    ctx.lineWidth = fontSize * 0.03;
+
+    // Calculate vertical starting position to center text within rectangle
+    const totalTextHeight = lines.length * fontSize * 1.2;
+    const verticalStart = bgPadding + (rectHeight - totalTextHeight) / 2;
+
+    // Draw each line on the canvas
+    lines.forEach((line, index) => {
+        const yPos = verticalStart + (fontSize * 1.2) * index;
+        const xPos = textPadding + bgPadding;
+        ctx.fillText(line, xPos, yPos+textPadding);
+        ctx.strokeText(line, xPos, yPos+textPadding); 
+        ctx.strokeText(line, xPos, yPos+textPadding); // Second stroke for added boldness
+    });
+}
+
+let f_o_canvas_from_o_file__wav = function(
     o_file__wav, 
     n_aspect_ratio_x, 
     n_aspect_ratio_y, 
+    n_color_channels = 4 // rgba
     // n_aspect_ratio_x_to_y = '1'
 ){
+
     let n_aspect_ratio_x_to_y = n_aspect_ratio_x / n_aspect_ratio_y;
-    let n_possible_pixels = (o_file__wav.o_file.a_n_u8__after_header.length/4)
+    let n_possible_pixels = (o_file__wav.o_file.a_n_u8.length/3)
     let n_x = Math.sqrt(n_possible_pixels*n_aspect_ratio_x_to_y);
     let n_y = n_x / n_aspect_ratio_x_to_y;
     n_x = Math.ceil(n_x);
     n_y = Math.ceil(n_y);
+    let n_pixels = n_x*n_y;
     
+    let a_n_u8__image_data = new Uint8Array(n_pixels*4);
+    
+    let n_idx_red = 0;
+    let n_idx_wav = 0;
+
+    while(n_idx_wav < o_file__wav.o_file.a_n_u8.length){
+        a_n_u8__image_data[n_idx_red++] = o_file__wav.o_file.a_n_u8[n_idx_wav++];
+        a_n_u8__image_data[n_idx_red++] = o_file__wav.o_file.a_n_u8[n_idx_wav++];
+        a_n_u8__image_data[n_idx_red++] = o_file__wav.o_file.a_n_u8[n_idx_wav++];
+        a_n_u8__image_data[n_idx_red++] = 255
+        // console.log(o_file__wav.o_file.a_n_u8[n_idx_wav])
+    }
+    console.log(n_idx_wav);
+    console.log(o_file__wav.o_file.a_n_u8.length);
+    console.log(o_file__wav.o_file.a_n_u8);
+    console.log(a_n_u8__image_data.length)
+    console.log(n_idx_red);
+
+
     const o_canvas = f_o_canvas(n_x, n_y);
-    const o_ctx = o_canvas.getContext("2d");
+    // const o_ctx = o_canvas.getContext("2d");
+    const o_ctx = o_canvas.getContext('2d', { alpha: true });
 
     let  f_draw_text_outlined = function(o_ctx, s_text, n_x, n_y) {
         o_ctx.strokeStyle = 'black';
@@ -478,24 +552,107 @@ let f_o_image_from_o_file__wav = async function(
     const o_image_data = o_ctx.createImageData(o_canvas.width, o_canvas.height);
 
     // Copy your data into the ImageData object
-    o_image_data.data.set(o_file__wav.o_file.a_n_u8);
+    o_image_data.data.set(a_n_u8__image_data);
 
+    
     o_ctx.putImageData(o_image_data, 0, 0);
 
     o_ctx.font = '18px Sans-serif';
     let s_name_file = o_file__wav.s_name.split("/").pop();
 
-    f_draw_text_outlined(
-        o_ctx,
-        `${s_name_file}, ${parseInt(o_file__wav.n_duration_seconds)} seconds, ${n_aspect_ratio_x}:${n_aspect_ratio_y}`, 
-        36, 
-        36
+    drawTextOnCanvas(
+        o_ctx, 
+        [
+            s_name_file, 
+            `${parseInt(o_file__wav.n_seconds_duration)} seconds`, 
+            `ratio ${n_aspect_ratio_x}:${n_aspect_ratio_y}`,
+            `channels ${o_file__wav.o_file.n_channels}`, 
+            `${o_file__wav.o_file.a_n_u8.length} bytes`, 
+        ],
+        0.4
     )
+    // f_draw_text_outlined(
+    //     o_ctx,
+    //     `${s_name_file}, ${parseInt(o_file__wav.n_seconds_duration)} seconds, ratio ${n_aspect_ratio_x}:${n_aspect_ratio_y}, ${o_file__wav.o_file.n_channels} channels, ${o_file__wav.o_file.a_n_u8.length} bytes`, 
+    //     36, 
+    //     36
+    // )
+    o_canvas.setAttribute('download', `${s_name_file}.png`)
+    o_canvas.download =  `${s_name_file}.png`
 
+    return o_canvas;
     // await Deno.writeFile(`${new Date().getTime()}_${s_name_file}_${n_aspect_ratio_x}to${n_aspect_ratio_y}.png`, o_canvas.toBuffer());
 
 }
+let f_o_file__wav__from_o_s_url_image = async function(s_url_image){
+    return new Promise(
+        (f_resolve)=>{
 
+            function getImageDataAsUint8Array(imgElement) {
+                const canvas = f_o_canvas()
+                canvas.width = imgElement.width;
+                canvas.height = imgElement.height;
+            
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(imgElement, 0, 0);
+            
+                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                return new Uint8Array(imageData.data.buffer);
+            }
+            let o_el_image = new Image();
+            o_el_image.src = s_url_image;
+            o_el_image.onload = function() {
+                const uint8Array = getImageDataAsUint8Array(o_el_image);
+
+                return f_resolve(
+                    f_o_file__wav__from_a_n_u8__after_header(
+                        uint8Array, 
+                        s_url_image.split("/").pop().split('?').shift()
+                    )
+                )
+                // Now you have the image data as Uint8Array
+            };
+
+        }
+    )
+
+}
+
+let f_o_canvas_waveform_from_o_file__wav = function(
+    o_file__wav, 
+    n_scl_x_px, 
+    n_scl_y_px, 
+    n_nor_start, 
+    n_nor_end
+){
+    const o_canvas = f_o_canvas(n_scl_x_px, n_scl_y_px);
+    const o_ctx = o_canvas.getContext('2d');
+
+
+    o_ctx.fillStyle = "red";
+    console.log(o_file__wav.a_a_n_sample__channels[0].length)
+    let n_nor_range = Math.abs(n_nor_end-n_nor_start);
+    let n_len_rms_samples = o_file__wav.a_a_n_rms100samples__channels[0].length * n_nor_range;
+    let n_idx_rms_offset = parseInt(n_nor_start * o_file__wav.a_a_n_rms100samples__channels[0].length);
+    let n_idx_per_px = parseInt(n_len_rms_samples / o_canvas.width);
+
+    for(let n_trn_x = 0; n_trn_x < o_canvas.width; n_trn_x+=1){
+
+        let n_idx_a_a_n_rms100samples__channels__start = (n_idx_per_px*n_trn_x)+n_idx_rms_offset;
+        let n_idx_a_a_n_rms100samples__channels__end = (n_idx_per_px*(n_trn_x+1))+n_idx_rms_offset;
+        let n_rms_avg = 0;
+        for(let n_idx_a_a_n_rms100samples__channels = n_idx_a_a_n_rms100samples__channels__start; n_idx_a_a_n_rms100samples__channels < n_idx_a_a_n_rms100samples__channels__end; n_idx_a_a_n_rms100samples__channels+=1){
+            n_rms_avg +=o_file__wav.a_a_n_rms100samples__channels[0][n_idx_a_a_n_rms100samples__channels];
+        }
+        n_rms_avg = n_rms_avg / Math.abs(n_idx_a_a_n_rms100samples__channels__start-n_idx_a_a_n_rms100samples__channels__end)
+
+        let n_rms_sample_val_nor = n_rms_avg / (Math.pow(2,o_file__wav.n_bits_per_sample)/2);//o_file__wav.a_a_n_sample_max_n_sample_min_n_sample_avg[0][0]//Math.pow(2, 16);
+        o_ctx.fillRect(n_trn_x, 0, 1, n_rms_sample_val_nor*o_canvas.height);
+
+    }
+
+
+}
 
 // o_file__wav.o_file.a_n_u8__after_header = new Uint8Array(new Array(100).fill(0))
 
@@ -519,5 +676,7 @@ let f_o_image_from_o_file__wav = async function(
 export {
     f_o_file__wav__from_a_n_u8__after_header, 
     f_o_file__wav__from_a_n_u8, 
-    f_o_file__wav__from_a_n_u8__fetch_from_s_url
+    f_o_file__wav__from_a_n_u8__fetch_from_s_url, 
+    f_o_canvas_from_o_file__wav, 
+    f_o_file__wav__from_o_s_url_image
 }
