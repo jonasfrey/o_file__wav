@@ -628,32 +628,126 @@ let f_o_canvas_waveform_from_o_file__wav = function(
     const o_canvas = f_o_canvas(n_scl_x_px, n_scl_y_px);
     const o_ctx = o_canvas.getContext('2d');
 
-
-    o_ctx.fillStyle = "red";
-    console.log(o_file__wav.a_a_n_sample__channels[0].length)
-    let n_nor_range = Math.abs(n_nor_end-n_nor_start);
-    let n_len_rms_samples = o_file__wav.a_a_n_rms100samples__channels[0].length * n_nor_range;
-    let n_idx_rms_offset = parseInt(n_nor_start * o_file__wav.a_a_n_rms100samples__channels[0].length);
-    let n_idx_per_px = parseInt(n_len_rms_samples / o_canvas.width);
-
-    for(let n_trn_x = 0; n_trn_x < o_canvas.width; n_trn_x+=1){
-
-        let n_idx_a_a_n_rms100samples__channels__start = (n_idx_per_px*n_trn_x)+n_idx_rms_offset;
-        let n_idx_a_a_n_rms100samples__channels__end = (n_idx_per_px*(n_trn_x+1))+n_idx_rms_offset;
-        let n_rms_avg = 0;
-        for(let n_idx_a_a_n_rms100samples__channels = n_idx_a_a_n_rms100samples__channels__start; n_idx_a_a_n_rms100samples__channels < n_idx_a_a_n_rms100samples__channels__end; n_idx_a_a_n_rms100samples__channels+=1){
-            n_rms_avg +=o_file__wav.a_a_n_rms100samples__channels[0][n_idx_a_a_n_rms100samples__channels];
-        }
-        n_rms_avg = n_rms_avg / Math.abs(n_idx_a_a_n_rms100samples__channels__start-n_idx_a_a_n_rms100samples__channels__end)
-
-        let n_rms_sample_val_nor = n_rms_avg / (Math.pow(2,o_file__wav.n_bits_per_sample)/2);//o_file__wav.a_a_n_sample_max_n_sample_min_n_sample_avg[0][0]//Math.pow(2, 16);
-        o_ctx.fillRect(n_trn_x, 0, 1, n_rms_sample_val_nor*o_canvas.height);
-
+    let O_nu_array = null;
+    if(o_file__wav.o_file.n_bits_per_sample == 8){
+        O_nu_array = Uint8Array
     }
+    if(o_file__wav.o_file.n_bits_per_sample == 16){
+        O_nu_array = Uint16Array
+    }
+    if(o_file__wav.o_file.n_bits_per_sample == 32){
+        O_nu_array = Uint32Array
+    }
+    
+    let a_nu_sample = new O_nu_array(o_file__wav.o_file.a_n_u8__after_header.buffer);
+    
+    console.log(a_nu_sample);
+    // debugger
+    o_ctx.strokeStyle = "red";
 
+    let n_nor_range = Math.abs(n_nor_end-n_nor_start);
+    let n_len_rms_samples = a_nu_sample.length * n_nor_range;
+    let n_idx_rms_offset = parseInt(n_nor_start * a_nu_sample.length);
+    let n_idx_per_px = Math.floor(n_len_rms_samples / o_canvas.width);
+
+    let n_num_max = Math.pow(2, o_file__wav.o_file.n_bits_per_sample)-1;
+    for (let n_trn_x = 0; n_trn_x < o_canvas.width; n_trn_x++) {
+ 
+        let n_idx_start = n_trn_x * n_idx_per_px+n_idx_rms_offset;
+        let n_idx_end = n_idx_start + n_idx_per_px;
+        
+
+        let n_sample_min = n_num_max;
+        let n_sample_max = 0;
+        let n_sample_rms_signed = 0;
+
+        // Find min and max values within this sample slice
+        for (let n_idx_sample = n_idx_start; n_idx_sample < n_idx_end; n_idx_sample++) {
+            let n_sample = a_nu_sample[n_idx_sample];
+            if (n_sample < n_sample_min) n_sample_min = n_sample;
+            if (n_sample > n_sample_max) n_sample_max = n_sample;
+            let n_sample_signed = (n_sample - (n_num_max/2))
+            n_sample_rms_signed+=(n_sample_signed*n_sample_signed);
+        }
+
+        n_sample_rms_signed = Math.sqrt(n_sample_rms_signed/n_idx_per_px);
+        let n_sample_rms = (n_sample_rms_signed - (n_num_max/2))*4.;  
+        // n_sample_rms*=10.; 
+    
+        // Normalize to [0, 1] range (canvas height represents this range)
+        let n_sample_min_nor = n_sample_min / n_num_max;
+        let n_sample_max_nor =  n_sample_max / n_num_max;
+        // Convert normalized value to canvas height
+        let n_trn_y_min = o_canvas.height - ((n_sample_min_nor-0.5) * o_canvas.height);
+        let n_trn_y_max = o_canvas.height - ((n_sample_max_nor-0.5) * o_canvas.height);
+        
+        // Draw lines from min to max
+        // o_ctx.beginPath();
+        // o_ctx.moveTo(n_trn_x, n_trn_y_min);
+        // o_ctx.lineTo(n_trn_x, n_trn_y_max);
+        // o_ctx.stroke();
+        let n_trn_y = (n_sample_rms/n_num_max)*o_canvas.height;
+        let n_scl_y_left = o_canvas.height-n_trn_y
+        o_ctx.fillRect(n_trn_x, n_scl_y_left-(n_scl_y_left/2), 1, n_trn_y);
+    }
+    return o_canvas;
+
+    // for(let n_trn_x = 0; n_trn_x < o_canvas.width; n_trn_x+=1){
+
+    //     let n_idx_a_a_n_rms100samples__channels__start = (n_idx_per_px*n_trn_x)+n_idx_rms_offset;
+    //     let n_idx_a_a_n_rms100samples__channels__end = (n_idx_per_px*(n_trn_x+1))+n_idx_rms_offset;
+    //     let n_rms_avg = 0;
+    //     for(let n_idx_a_a_n_rms100samples__channels = n_idx_a_a_n_rms100samples__channels__start; n_idx_a_a_n_rms100samples__channels < n_idx_a_a_n_rms100samples__channels__end; n_idx_a_a_n_rms100samples__channels+=1){
+    //         n_rms_avg +=o_file__wav.a_a_n_rms100samples__channels[0][n_idx_a_a_n_rms100samples__channels];
+    //     }
+    //     n_rms_avg = n_rms_avg / Math.abs(n_idx_a_a_n_rms100samples__channels__start-n_idx_a_a_n_rms100samples__channels__end)
+
+    //     let n_rms_sample_val_nor = n_rms_avg / (Math.pow(2,o_file__wav.n_bits_per_sample)/2);//o_file__wav.a_a_n_sample_max_n_sample_min_n_sample_avg[0][0]//Math.pow(2, 16);
+    //     o_ctx.fillRect(n_trn_x, 0, 1, n_rms_sample_val_nor*o_canvas.height);
+
+    // }
 
 }
 
+// let f_chat_gpt = function(){
+//     let int16 = ;//my samples
+//     let samples = new Uint16Array(int16.buffer);
+//     /* Your int16 array of audio samples */;
+//     let canvas = document.getElementById('myCanvas');
+//     let ctx = canvas.getContext('2d');
+
+//     // Clear canvas
+//     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+//     let samplesPerPixel = Math.floor(samples.length / canvas.width);
+
+//     // Function to compute RMS for a chunk of samples
+//     function computeRMS(chunk) {
+//         let sum = 0;
+//         for (let i = 0; i < chunk.length; i++) {
+//             sum += chunk[i] * chunk[i]; // square each sample
+//         }
+//         return Math.sqrt(sum / chunk.length);
+//     }
+
+//     // Drawing the RMS waveform
+//     for (let i = 0; i < canvas.width; i++) {
+//         let start = i * samplesPerPixel;
+//         let end = start + samplesPerPixel;
+
+//         let chunk = samples.slice(start, end);
+//         let rmsValue = computeRMS(chunk);
+
+//         // Normalize RMS value to [0, 1] range
+//         let normalizedRMS = rmsValue / (Math.pow(2, 16)-1); // Since Int16 max value is 32768
+
+//         // Convert normalized value to canvas height
+//         let height = (normalizedRMS-.5) * canvas.height;
+
+//         // Draw RMS value as a rectangle
+//         ctx.fillRect(i, canvas.height - height, 1, height);
+//     }
+// }
 // o_file__wav.o_file.a_n_u8__after_header = new Uint8Array(new Array(100).fill(0))
 
 // let a_s_name_file = [
@@ -678,5 +772,6 @@ export {
     f_o_file__wav__from_a_n_u8, 
     f_o_file__wav__from_a_n_u8__fetch_from_s_url, 
     f_o_canvas_from_o_file__wav, 
-    f_o_file__wav__from_o_s_url_image
+    f_o_file__wav__from_o_s_url_image, 
+    f_o_canvas_waveform_from_o_file__wav
 }

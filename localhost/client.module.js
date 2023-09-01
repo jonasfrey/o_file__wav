@@ -4,6 +4,7 @@
 //md: # import functions 
 import {
     f_o_canvas_from_o_file__wav,
+    f_o_canvas_waveform_from_o_file__wav,
     f_o_file__wav__from_a_n_u8,
     f_o_file__wav__from_a_n_u8__after_header,
     f_o_file__wav__from_a_n_u8__fetch_from_s_url,
@@ -72,9 +73,10 @@ document.body.appendChild(
 
 //md: # `f_o_file__wav__from_a_n_u8__fetch_from_s_url`: fetch a .wav file from a url and create a o_file__wav
 // if we have a webserver that hosts .wav files we can directly fetch those into a o_wav__file 
-o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/120_Em_Cello_51_189_SP.wav');
-// o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/CantinaBand60.wav');
-
+// o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/120_Em_Cello_51_189_SP.wav');
+// o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/120_Em_Cello_51_189_SP.wav');
+o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/CantinaBand60.wav');
+let o_file__wav__cantina = o_file__wav
 document.body.appendChild(
     f_o_el_audio__from_o_file__wav(o_file__wav)
 )
@@ -90,7 +92,7 @@ document.body.appendChild(o_canvas);
 
 //md: ![CantinaBand60.wav.png]('./localhost/files/CantinaBand60.wav.png')
 
-//md: # `asdf`: convert a image to a wav file
+//md: # `f_o_file__wav__from_o_s_url_image`: convert a image(url or file_path) to a wav file
 
 let s_path_file_image_to_convert = './files/circles.png'
 o_file__wav = await f_o_file__wav__from_o_s_url_image(s_path_file_image_to_convert); 
@@ -107,5 +109,17 @@ document.body.appendChild(
     f_o_el_audio__from_o_file__wav(o_file__wav)
 )
 console.log(o_file__wav.o_file)
+
+
+//md: # `f_o_canvas_waveform_from_o_file__wav`: convert a image(url or file_path) to a wav file
+o_canvas = f_o_canvas_waveform_from_o_file__wav(
+    await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/BabyElephantWalk60.wav'), 
+    500,
+    200,
+    0.0, 
+    1.0 
+    
+);
+document.body.appendChild(o_canvas);
 
 //./readme.md:end
