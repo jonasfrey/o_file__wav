@@ -72,10 +72,7 @@ document.body.appendChild(
 
 
 //md: # `f_o_file__wav__from_a_n_u8__fetch_from_s_url`: fetch a .wav file from a url and create a o_file__wav
-// if we have a webserver that hosts .wav files we can directly fetch those into a o_wav__file 
-// o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/120_Em_Cello_51_189_SP.wav');
-// o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/120_Em_Cello_51_189_SP.wav');
-o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/CantinaBand60.wav');
+o_file__wav = await f_o_file__wav__from_a_n_u8__fetch_from_s_url('./files/BabyElephantWalk60.wav');
 let o_file__wav__cantina = o_file__wav
 document.body.appendChild(
     f_o_el_audio__from_o_file__wav(o_file__wav)
